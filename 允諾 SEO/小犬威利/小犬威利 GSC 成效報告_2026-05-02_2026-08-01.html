@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>小犬威利 · 搜尋成效數據（2026/05/02 – 2026/08/01）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* 大地色系 — 主色取自 doggy-willie.com 實際使用的品牌色
+     琥珀 #d77f2c（品牌）／駝褐 #b4875e／暖灰米 #d7d2cb／深咖啡 #2c2720
+     語意分工：橄欖 = 點擊、正向；駝褐 = 曝光；磚紅 = 警示、排名退步 */
+  :root{
+    --paper:#fffdf9; --bg-tint:#f6f2ea; --ink:#2c2720; --ink-soft:#6b6157; --line:#e5ded3;
+    --amber:#d77f2c; --amber-deep:#a35a13; --amber-light:#fbeeda;
+    --olive:#6b7a45; --olive-deep:#4a5530; --olive-light:#ebeede; --earth-dark:#2c2720;
+    --tan:#b4875e; --tan-deep:#7a5432; --tan-light:#f2e8dc;
+    --brick:#9c3a24; --brick-deep:#6e2716; --brick-light:#f7e4de; --grey-mid:#a2968a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Noto Sans TC','PingFang TC','Helvetica Neue',Arial,sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.7; font-size:16px; -webkit-font-smoothing:antialiased; }
+
+  .hero{ background:var(--earth-dark); color:#fff; padding:52px 8vw 40px; position:relative; }
+  .hero::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:5px; background:var(--amber); }
+  .hero-eyebrow{ font-size:14px; letter-spacing:0.1em; color:#e0cdb2; font-weight:500; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+  .hero-eyebrow::before{ content:""; width:26px; height:1px; background:#e0cdb2; }
+  .hero h1{ font-size:clamp(26px,3.6vw,38px); font-weight:700; color:#fff; }
+  .hero-range{ margin-top:10px; font-size:16px; color:#ded2c2; font-variant-numeric:tabular-nums; }
+  .period-compare{ margin-top:26px; display:flex; align-items:stretch; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.18); padding-top:20px; }
+  .pc-box{ padding-right:30px; }
+  .pc-box .pc-tag{ display:inline-block; font-size:12px; padding:2px 9px; border-radius:5px; font-weight:500; margin-bottom:6px; }
+  .pc-box.old .pc-tag{ background:rgba(255,255,255,0.16); color:#ded2c2; }
+  .pc-box.now .pc-tag{ background:var(--amber); color:#2c2720; }
+  .pc-box .pc-date{ font-size:17px; color:#fff; font-weight:700; font-variant-numeric:tabular-nums; }
+  .pc-box .pc-days{ font-size:13px; color:#b5a795; margin-top:2px; }
+  .pc-arrow{ display:flex; align-items:center; color:var(--amber); font-size:24px; padding:0 26px 0 0; }
+
+  main{ max-width:1120px; margin:0 auto; padding:0 8vw 70px; }
+  section{ padding-top:52px; }
+  .section-num{ font-size:13.5px; color:var(--amber-deep); font-weight:500; letter-spacing:0.06em; }
+  .section-title{ font-size:25px; font-weight:700; margin-top:6px; margin-bottom:18px; }
+  .sub-title{ font-size:18px; font-weight:700; margin-top:34px; margin-bottom:2px; }
+  .meta{ font-size:14px; color:var(--ink-soft); margin-bottom:14px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .grid.g3{ grid-template-columns:repeat(3,1fr); }
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:18px 18px 16px; }
+  .card.good{ border-color:var(--olive); background:linear-gradient(180deg,#fff,var(--olive-light)); }
+  .card.bad{ border-color:var(--brick); background:linear-gradient(180deg,#fff,var(--brick-light)); }
+  .c-label{ font-size:13.5px; color:var(--ink-soft); }
+  .c-val{ font-size:34px; font-weight:700; color:var(--ink); letter-spacing:-0.02em; line-height:1.2; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .c-val.olive{ color:var(--olive-deep); } .c-val.tan{ color:var(--tan-deep); } .c-val.brick{ color:var(--brick); }
+  .c-sub{ margin-top:8px; font-size:14px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .c-sub b{ color:var(--ink); }
+  .c-sub .ar{ color:var(--grey-mid); margin:0 5px; }
+  .c-note{ font-size:12.5px; color:var(--grey-mid); margin-top:6px; }
+
+  .chart-card{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:22px 22px 14px; margin-top:14px; }
+  .chart-card h3{ font-size:17px; font-weight:700; }
+  .legend-row{ display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 12px; font-size:13.5px; color:var(--ink-soft); }
+  .legend-row span{ display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:15px; }
+  th{ text-align:right; font-size:13px; color:var(--ink-soft); font-weight:500; padding:9px 11px; border-bottom:2px solid var(--line); white-space:nowrap; }
+  th:first-child, th.tl{ text-align:left; }
+  td{ padding:10px 11px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  td.tl{ text-align:left; }
+  td.num{ text-align:right; white-space:nowrap; }
+  td.strong{ font-weight:700; }
+  td.dim{ color:var(--grey-mid); }
+  td.tan{ color:var(--tan-deep); }
+  td.olive{ color:var(--olive-deep); font-weight:700; }
+  td.warn{ color:var(--brick); font-weight:700; }
+  td a{ color:var(--ink); text-decoration:none; }
+  td a:hover{ color:var(--amber-deep); text-decoration:underline; }
+  tbody tr:hover{ background:var(--bg-tint); }
+  .tag{ font-size:12px; padding:1px 7px; border-radius:5px; background:var(--bg-tint); color:var(--ink-soft); white-space:nowrap; }
+
+  footer{ background:var(--earth-dark); color:#b5a795; padding:30px 8vw; font-size:14px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  footer .brand{ color:#fff; font-weight:700; }
+
+  @media (max-width:860px){
+    .grid, .grid.g3{ grid-template-columns:repeat(2,1fr); }
+    .hero{ padding:42px 6vw 34px; } main{ padding:0 6vw 56px; } .pc-arrow{ padding:0 16px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">允諾行銷｜Google Search Console 成效數據</div>
+  <h1>小犬威利 Doggy Willie</h1>
+  <div class="hero-range">2026/05/02 – 2026/08/01　共 92 天</div>
+  <div class="period-compare">
+    <div class="pc-box old">
+      <span class="pc-tag">前半段</span>
+      <div class="pc-date">2026/05/02 – 2026/06/16</div>
+      <div class="pc-days">46 天</div>
+    </div>
+    <div class="pc-arrow">→</div>
+    <div class="pc-box now">
+      <span class="pc-tag">後半段</span>
+      <div class="pc-date">2026/06/17 – 2026/08/01</div>
+      <div class="pc-days">46 天</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section>
+    <div class="section-num">01</div>
+    <div class="section-title">期間總計</div>
+    <div class="grid">
+      <div class="card good">
+        <div class="c-label">點擊</div>
+        <div class="c-val olive">3,340</div>
+        <div class="c-sub">每天 <b>36.3</b></div>
+      </div>
+      <div class="card">
+        <div class="c-label">曝光</div>
+        <div class="c-val tan">170,875</div>
+        <div class="c-sub">每天 <b>1,857</b></div>
+      </div>
+      <div class="card">
+        <div class="c-label">點閱率</div>
+        <div class="c-val">1.95%</div>
+        <div class="c-sub">3,340 ÷ 170,875</div>
+      </div>
+      <div class="card">
+        <div class="c-label">平均排名</div>
+        <div class="c-val">9.38</div>
+        <div class="c-note">曝光加權平均；數字越小越前面</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">02</div>
+    <div class="section-title">前 46 天 vs 後 46 天</div>
+    <div class="grid">
+      <div class="card bad">
+        <div class="c-label">每天點擊</div>
+        <div class="c-val brick">-36%</div>
+        <div class="c-sub">44.4<span class="ar">→</span><b>28.2</b></div>
+      </div>
+      <div class="card bad">
+        <div class="c-label">每天曝光</div>
+        <div class="c-val brick">-43%</div>
+        <div class="c-sub">2,368<span class="ar">→</span><b>1,347</b></div>
+      </div>
+      <div class="card good">
+        <div class="c-label">點閱率</div>
+        <div class="c-val olive">+11%</div>
+        <div class="c-sub">1.88%<span class="ar">→</span><b>2.09%</b></div>
+      </div>
+      <div class="card bad">
+        <div class="c-label">平均排名</div>
+        <div class="c-val brick">+2.67</div>
+        <div class="c-sub">8.41<span class="ar">→</span><b>11.08</b></div>
+        <div class="c-note">數字變大 = 往後退</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">03</div>
+    <div class="section-title">每週走勢</div>
+    <p class="meta">已排除 04/27（2 天）與 07/27（6 天）兩個不完整的週。</p>
+
+    <div class="chart-card">
+      <h3>每週點擊</h3>
+      <div class="legend-row">
+        <span><span class="dot" style="background:#d8d0c4"></span>前半段</span>
+        <span><span class="dot" style="background:#6b7a45"></span>後半段</span>
+      </div>
+      <div style="position:relative;height:280px;"><canvas id="weekClicks" role="img" aria-label="每週點擊長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每週曝光</h3>
+      <div class="legend-row">
+        <span><span class="dot" style="background:#d8d0c4"></span>前半段</span>
+        <span><span class="dot" style="background:#a8794c"></span>後半段</span>
+      </div>
+      <div style="position:relative;height:280px;"><canvas id="weekImpr" role="img" aria-label="每週曝光長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每週點閱率</h3>
+      <div style="position:relative;height:240px;"><canvas id="weekCtr" role="img" aria-label="每週點閱率折線圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每日平均排名</h3>
+      <div class="legend-row"><span>Y 軸已反轉：線往下 = 排名往前</span></div>
+      <div style="position:relative;height:230px;"><canvas id="rankLine" role="img" aria-label="每日平均排名折線圖"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">04</div>
+    <div class="section-title">逐月</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>月份</th><th>天數</th><th>點擊</th><th>每天點擊</th><th>每天曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">2026/05</td>
+        <td class="num dim">30</td><td class="num">1,462</td><td class="num strong">48.7</td>
+        <td class="num tan">2,616</td><td class="num">1.86%</td><td class="num">8.07</td></tr>
+      <tr><td class="tl">2026/06</td>
+        <td class="num dim">30</td><td class="num">959</td><td class="num strong">32.0</td>
+        <td class="num tan">1,687</td><td class="num">1.9%</td><td class="num">9.94</td></tr>
+      <tr><td class="tl">2026/07</td>
+        <td class="num dim">31</td><td class="num">884</td><td class="num strong">28.5</td>
+        <td class="num tan">1,314</td><td class="num">2.17%</td><td class="num">11.15</td></tr>
+      <tr><td class="tl">2026/08 <span class="tag">僅 1 天</span></td>
+        <td class="num dim">1</td><td class="num">35</td><td class="num strong">35.0</td>
+        <td class="num tan">1,059</td><td class="num">3.31%</td><td class="num">11.4</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="section-num">05</div>
+    <div class="section-title">頁面成效</div>
+    <p class="meta">整段 92 天合計。錨點網址（#章節）已併回母頁面，其中 58,555 次曝光屬於錨點。</p>
+    <div class="sub-title">內容頁</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th class="tl">頁面</th><th>點擊</th><th>佔全站</th><th>曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="num dim">1</td>
+        <td class="tl"><a href="https://doggy-willie.com/dog-eat-vegetables/" target="_blank" rel="noopener">狗狗可以吃的蔬菜有哪些？胡蘿蔔、綠花椰菜、南瓜等高營養蔬菜！</a></td>
+        <td class="num strong">882</td><td class="num dim">26.4%</td>
+        <td class="num tan">42,190</td><td class="num">2.09%</td>
+        <td class="num">7.54</td></tr>
+      <tr><td class="num dim">2</td>
+        <td class="tl"><a href="https://doggy-willie.com/puppy-stereotypes/" target="_blank" rel="noopener">幼犬幾個月會定型？狗狗成長時間表</a></td>
+        <td class="num strong">452</td><td class="num dim">13.5%</td>
+        <td class="num tan">32,458</td><td class="num">1.39%</td>
+        <td class="num">7.08</td></tr>
+      <tr><td class="num dim">3</td>
+        <td class="tl"><a href="https://doggy-willie.com/vomit-color/" target="_blank" rel="noopener">為什麼狗狗吐未消化食物？嘔吐物顏色分辨教學</a></td>
+        <td class="num strong">207</td><td class="num dim">6.2%</td>
+        <td class="num tan">39,990</td><td class="num warn">0.52%</td>
+        <td class="num">8.58</td></tr>
+      <tr><td class="num dim">4</td>
+        <td class="tl"><a href="https://doggy-willie.com/5-essential-tips-for-puppy-teething/" target="_blank" rel="noopener">幼犬換牙順序是什麼？幼犬口腔照護五大要點</a></td>
+        <td class="num strong">97</td><td class="num dim">2.9%</td>
+        <td class="num tan">19,113</td><td class="num warn">0.51%</td>
+        <td class="num">7.83</td></tr>
+      <tr><td class="num dim">5</td>
+        <td class="tl"><a href="https://doggy-willie.com/puppyfood/" target="_blank" rel="noopener">幼犬飼料吃到幾歲可以換成犬飼料？</a></td>
+        <td class="num strong">85</td><td class="num dim">2.5%</td>
+        <td class="num tan">5,816</td><td class="num">1.46%</td>
+        <td class="num">10.57</td></tr>
+      <tr><td class="num dim">6</td>
+        <td class="tl"><a href="https://doggy-willie.com/dog-poisoning/" target="_blank" rel="noopener">狗狗中毒症狀有哪些？緊急處理方式。24H動物醫院清單</a></td>
+        <td class="num strong">74</td><td class="num dim">2.2%</td>
+        <td class="num tan">8,620</td><td class="num warn">0.86%</td>
+        <td class="num">8.09</td></tr>
+      <tr><td class="num dim">7</td>
+        <td class="tl"><a href="https://doggy-willie.com/doggy-eat-fruit/" target="_blank" rel="noopener">狗狗可以吃的水果有哪些？葡萄、酪梨千萬不要碰！</a></td>
+        <td class="num strong">45</td><td class="num dim">1.3%</td>
+        <td class="num tan">20,970</td><td class="num warn">0.21%</td>
+        <td class="num">10.33</td></tr>
+      <tr><td class="num dim">8</td>
+        <td class="tl"><a href="https://doggy-willie.com/dog-anxiety-behavior/" target="_blank" rel="noopener">狗狗焦慮行為</a></td>
+        <td class="num strong">30</td><td class="num dim">0.9%</td>
+        <td class="num tan">2,850</td><td class="num">1.05%</td>
+        <td class="num">9.89</td></tr>
+      <tr><td class="num dim">9</td>
+        <td class="tl"><a href="https://doggy-willie.com/puppy-food/" target="_blank" rel="noopener">幼犬飼料份量怎麼抓？不過量又營養，您可以這麼做</a></td>
+        <td class="num strong">30</td><td class="num dim">0.9%</td>
+        <td class="num tan">6,364</td><td class="num warn">0.47%</td>
+        <td class="num">15.21</td></tr>
+      <tr><td class="num dim">10</td>
+        <td class="tl"><a href="https://doggy-willie.com/five-tips-get-along-with/" target="_blank" rel="noopener">與狗相處的五個要點</a></td>
+        <td class="num strong">28</td><td class="num dim">0.8%</td>
+        <td class="num tan">3,561</td><td class="num warn">0.79%</td>
+        <td class="num">6.17</td></tr>
+      <tr><td class="num dim">11</td>
+        <td class="tl"><a href="https://doggy-willie.com/dog-emotions/" target="_blank" rel="noopener">狗狗情緒</a></td>
+        <td class="num strong">28</td><td class="num dim">0.8%</td>
+        <td class="num tan">2,748</td><td class="num">1.02%</td>
+        <td class="num">10.21</td></tr>
+      <tr><td class="num dim">12</td>
+        <td class="tl"><a href="https://doggy-willie.com/shortness-of-breath/" target="_blank" rel="noopener">狗狗呼吸急促</a></td>
+        <td class="num strong">18</td><td class="num dim">0.5%</td>
+        <td class="num tan">3,905</td><td class="num warn">0.46%</td>
+        <td class="num">15.33</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">品牌／官網頁</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th class="tl">頁面</th><th>點擊</th><th>佔全站</th><th>曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="num dim">1</td>
+        <td class="tl"><a href="https://doggy-willie.com/" target="_blank" rel="noopener">首頁</a></td>
+        <td class="num strong">1,037</td><td class="num dim">31.0%</td>
+        <td class="num tan">7,078</td><td class="num">14.65%</td>
+        <td class="num">6.0</td></tr>
+      <tr><td class="num dim">2</td>
+        <td class="tl"><a href="https://doggy-willie.com/about-us/" target="_blank" rel="noopener">關於我們</a></td>
+        <td class="num strong">65</td><td class="num dim">1.9%</td>
+        <td class="num tan">922</td><td class="num">7.05%</td>
+        <td class="num">3.29</td></tr>
+      <tr><td class="num dim">3</td>
+        <td class="tl"><a href="https://doggy-willie.com/product/" target="_blank" rel="noopener">產品列表</a></td>
+        <td class="num strong">59</td><td class="num dim">1.8%</td>
+        <td class="num tan">1,804</td><td class="num">3.27%</td>
+        <td class="num">4.1</td></tr>
+      <tr><td class="num dim">4</td>
+        <td class="tl"><a href="https://doggy-willie.com/鮭魚粉重金屬【汞】超標官方申明稿/" target="_blank" rel="noopener">鮭魚粉重金屬【汞】超標官方聲明稿</a></td>
+        <td class="num strong">39</td><td class="num dim">1.2%</td>
+        <td class="num tan">691</td><td class="num">5.64%</td>
+        <td class="num">3.67</td></tr>
+      <tr><td class="num dim">5</td>
+        <td class="tl"><a href="https://doggy-willie.com/channels/" target="_blank" rel="noopener">通路據點</a></td>
+        <td class="num strong">24</td><td class="num dim">0.7%</td>
+        <td class="num tan">1,626</td><td class="num">1.48%</td>
+        <td class="num">4.71</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="section-num">06</div>
+    <div class="section-title">高曝光低點閱頁面</div>
+    <p class="meta">曝光 ≥ 3,000 且點閱率 &lt; 1.5%。最後一欄為「點閱率提升至 2%」的點擊增量試算。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">頁面</th><th>曝光</th><th>點擊</th><th>點閱率</th><th>平均排名</th><th>試算增量</th></tr></thead>
+      <tbody>
+      <tr><td class="tl"><a href="https://doggy-willie.com/vomit-color/" target="_blank" rel="noopener">為什麼狗狗吐未消化食物？嘔吐物顏色分辨教學</a></td>
+        <td class="num tan strong">39,990</td><td class="num">207</td>
+        <td class="num warn">0.52%</td><td class="num">8.58</td>
+        <td class="num olive">+593</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/puppy-stereotypes/" target="_blank" rel="noopener">幼犬幾個月會定型？狗狗成長時間表</a></td>
+        <td class="num tan strong">32,458</td><td class="num">452</td>
+        <td class="num warn">1.39%</td><td class="num">7.08</td>
+        <td class="num olive">+197</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/doggy-eat-fruit/" target="_blank" rel="noopener">狗狗可以吃的水果有哪些？葡萄、酪梨千萬不要碰！</a></td>
+        <td class="num tan strong">20,970</td><td class="num">45</td>
+        <td class="num warn">0.21%</td><td class="num">10.33</td>
+        <td class="num olive">+374</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/5-essential-tips-for-puppy-teething/" target="_blank" rel="noopener">幼犬換牙順序是什麼？幼犬口腔照護五大要點</a></td>
+        <td class="num tan strong">19,113</td><td class="num">97</td>
+        <td class="num warn">0.51%</td><td class="num">7.83</td>
+        <td class="num olive">+285</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/dog-poisoning/" target="_blank" rel="noopener">狗狗中毒症狀有哪些？緊急處理方式。24H動物醫院清單</a></td>
+        <td class="num tan strong">8,620</td><td class="num">74</td>
+        <td class="num warn">0.86%</td><td class="num">8.09</td>
+        <td class="num olive">+98</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/puppy-vaccinations/" target="_blank" rel="noopener">幼犬疫苗要打哪些？種類、費用、注意事項一次看</a></td>
+        <td class="num tan strong">6,884</td><td class="num">5</td>
+        <td class="num warn">0.07%</td><td class="num">13.8</td>
+        <td class="num olive">+133</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/puppy-food/" target="_blank" rel="noopener">幼犬飼料份量怎麼抓？不過量又營養，您可以這麼做</a></td>
+        <td class="num tan strong">6,364</td><td class="num">30</td>
+        <td class="num warn">0.47%</td><td class="num">15.21</td>
+        <td class="num olive">+97</td></tr>
+      <tr><td class="tl"><a href="https://doggy-willie.com/puppyfood/" target="_blank" rel="noopener">幼犬飼料吃到幾歲可以換成犬飼料？</a></td>
+        <td class="num tan strong">5,816</td><td class="num">85</td>
+        <td class="num warn">1.46%</td><td class="num">10.57</td>
+        <td class="num olive">+31</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="section-num">07</div>
+    <div class="section-title">搜尋字</div>
+    <p class="meta">GSC 匯出上限 1,000 列，涵蓋全站點擊的 47.3%。以下比例均為此樣本內的比例。</p>
+    <div class="grid g3">
+      <div class="card">
+        <div class="c-label">品牌字點擊</div>
+        <div class="c-val olive">55.8%</div>
+        <div class="c-sub">881 次</div>
+      </div>
+      <div class="card">
+        <div class="c-label">非品牌字點擊</div>
+        <div class="c-val tan">44.2%</div>
+        <div class="c-sub">698 次</div>
+      </div>
+      <div class="card">
+        <div class="c-label">零點擊字</div>
+        <div class="c-val">793</div>
+        <div class="c-sub">曝光 32,711</div>
+      </div>
+    </div>
+
+    <div class="sub-title">非品牌字 · 前 10</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">搜尋字</th><th>點擊</th><th>曝光</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">狗狗可以吃的蔬菜</td><td class="num strong">71</td>
+        <td class="num tan">1,444</td><td class="num">3.55</td></tr>
+      <tr><td class="tl">狗可以吃的蔬菜</td><td class="num strong">35</td>
+        <td class="num tan">434</td><td class="num">2.59</td></tr>
+      <tr><td class="tl">幼犬幾個月定型</td><td class="num strong">31</td>
+        <td class="num tan">387</td><td class="num">1.53</td></tr>
+      <tr><td class="tl">狗狗可以吃什麼蔬菜</td><td class="num strong">21</td>
+        <td class="num tan">397</td><td class="num">2.27</td></tr>
+      <tr><td class="tl">狗狗吐未消化食物dcard</td><td class="num strong">19</td>
+        <td class="num tan">746</td><td class="num">9.55</td></tr>
+      <tr><td class="tl">狗可以吃什麼蔬菜</td><td class="num strong">17</td>
+        <td class="num tan">315</td><td class="num">2.39</td></tr>
+      <tr><td class="tl">狗狗吃什麼蔬菜最好</td><td class="num strong">15</td>
+        <td class="num tan">248</td><td class="num">2.69</td></tr>
+      <tr><td class="tl">狗狗吐咖啡色</td><td class="num strong">15</td>
+        <td class="num tan">171</td><td class="num">3.73</td></tr>
+      <tr><td class="tl">狗狗可以吃的蔬菜水果</td><td class="num strong">13</td>
+        <td class="num tan">435</td><td class="num">2.96</td></tr>
+      <tr><td class="tl">幼犬換牙順序</td><td class="num strong">13</td>
+        <td class="num tan">406</td><td class="num">2.96</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">品牌字</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">搜尋字</th><th>點擊</th><th>曝光</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">小犬威利</td><td class="num strong">549</td>
+        <td class="num tan">1,544</td><td class="num">1.09</td></tr>
+      <tr><td class="tl">小犬威力</td><td class="num strong">178</td>
+        <td class="num tan">529</td><td class="num">1.03</td></tr>
+      <tr><td class="tl">威饌股份有限公司</td><td class="num strong">38</td>
+        <td class="num tan">189</td><td class="num">2.97</td></tr>
+      <tr><td class="tl">doggy willie</td><td class="num strong">38</td>
+        <td class="num tan">105</td><td class="num">1.95</td></tr>
+      <tr><td class="tl">小犬威利凍乾</td><td class="num strong">33</td>
+        <td class="num tan">135</td><td class="num">1.05</td></tr>
+      <tr><td class="tl">小犬威利不合格</td><td class="num strong">26</td>
+        <td class="num tan">296</td><td class="num">2.56</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">主題分群 · 非品牌字</div>
+    <p class="meta">依關鍵字字面比對分群，非 GSC 原生維度。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">主題</th><th>字數</th><th>點擊</th><th>曝光</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">蔬菜／飲食</td><td class="num dim">345</td>
+        <td class="num strong">411</td><td class="num tan">20,182</td></tr>
+      <tr><td class="tl">幼犬成長／定型</td><td class="num dim">169</td>
+        <td class="num strong">136</td><td class="num tan">10,947</td></tr>
+      <tr><td class="tl">嘔吐／健康症狀</td><td class="num dim">154</td>
+        <td class="num strong">119</td><td class="num tan">12,658</td></tr>
+      <tr><td class="tl">飼料／營養</td><td class="num dim">63</td>
+        <td class="num strong">18</td><td class="num tan">2,847</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <div class="section-num">08</div>
+    <div class="section-title">裝置</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">裝置</th><th>點擊</th><th>佔比</th><th>曝光</th><th>佔比</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">行動裝置</td><td class="num strong">2,490</td><td class="num dim">74.6%</td>
+        <td class="num tan">101,571</td><td class="num dim">59.4%</td>
+        <td class="num">2.45%</td><td class="num">7.57</td></tr>
+      <tr><td class="tl">桌面</td><td class="num strong">811</td><td class="num dim">24.3%</td>
+        <td class="num tan">67,510</td><td class="num dim">39.5%</td>
+        <td class="num warn">1.2%</td><td class="num">12.11</td></tr>
+      <tr><td class="tl">平板電腦</td><td class="num strong">39</td><td class="num dim">1.2%</td>
+        <td class="num tan">1,794</td><td class="num dim">1.0%</td>
+        <td class="num">2.17%</td><td class="num">8.31</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">國家／地區 · 前 6</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">國家／地區</th><th>點擊</th><th>佔比</th><th>曝光</th><th>佔比</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">台灣</td><td class="num strong">3,031</td><td class="num dim">90.7%</td>
+        <td class="num tan">103,890</td><td class="num dim">60.8%</td>
+        <td class="num">2.92%</td><td class="num">8.2</td></tr>
+      <tr><td class="tl">香港</td><td class="num strong">150</td><td class="num dim">4.5%</td>
+        <td class="num tan">11,464</td><td class="num dim">6.7%</td>
+        <td class="num warn">1.31%</td><td class="num">16.18</td></tr>
+      <tr><td class="tl">美國</td><td class="num strong">30</td><td class="num dim">0.9%</td>
+        <td class="num tan">23,864</td><td class="num dim">14.0%</td>
+        <td class="num warn">0.13%</td><td class="num">10.63</td></tr>
+      <tr><td class="tl">馬來西亞</td><td class="num strong">28</td><td class="num dim">0.8%</td>
+        <td class="num tan">4,488</td><td class="num dim">2.6%</td>
+        <td class="num warn">0.62%</td><td class="num">7.63</td></tr>
+      <tr><td class="tl">澳洲</td><td class="num strong">17</td><td class="num dim">0.5%</td>
+        <td class="num tan">1,072</td><td class="num dim">0.6%</td>
+        <td class="num">1.59%</td><td class="num">7.78</td></tr>
+      <tr><td class="tl">新加坡</td><td class="num strong">16</td><td class="num dim">0.5%</td>
+        <td class="num tan">1,265</td><td class="num dim">0.7%</td>
+        <td class="num warn">1.26%</td><td class="num">8.18</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+</main>
+
+<footer>
+  <span><span class="brand">允諾行銷</span>　小犬威利 Doggy Willie</span>
+  <span>Google Search Console　2026/05/02 – 2026/08/01</span>
+</footer>
+
+<script>
+const weekly = [{"label": "05/04", "days": 7, "clicks": 314, "impressions": 19949, "ctr": 1.57, "rank": 7.71, "period": "p1"}, {"label": "05/11", "days": 7, "clicks": 381, "impressions": 18650, "ctr": 2.04, "rank": 7.99, "period": "p1"}, {"label": "05/18", "days": 7, "clicks": 341, "impressions": 18623, "ctr": 1.83, "rank": 8.41, "period": "p1"}, {"label": "05/25", "days": 7, "clicks": 318, "impressions": 15812, "ctr": 2.01, "rank": 8.25, "period": "p1"}, {"label": "06/01", "days": 7, "clicks": 252, "impressions": 13000, "ctr": 1.94, "rank": 8.44, "period": "p1"}, {"label": "06/08", "days": 7, "clicks": 250, "impressions": 14182, "ctr": 1.76, "rank": 10.08, "period": "p1"}, {"label": "06/15", "days": 7, "clicks": 201, "impressions": 9725, "ctr": 2.07, "rank": 9.91, "period": "p1"}, {"label": "06/22", "days": 7, "clicks": 203, "impressions": 10978, "ctr": 1.85, "rank": 11.91, "period": "p2"}, {"label": "06/29", "days": 7, "clicks": 216, "impressions": 9512, "ctr": 2.27, "rank": 9.28, "period": "p2"}, {"label": "07/06", "days": 7, "clicks": 188, "impressions": 14976, "ctr": 1.26, "rank": 12.77, "period": "p2"}, {"label": "07/13", "days": 7, "clicks": 179, "impressions": 6640, "ctr": 2.7, "rank": 10.22, "period": "p2"}, {"label": "07/20", "days": 7, "clicks": 213, "impressions": 7134, "ctr": 2.99, "rank": 10.01, "period": "p2"}];
+const daily  = [{"date": "05-02", "clicks": 51, "impressions": 2796, "position": 7.5}, {"date": "05-03", "clicks": 57, "impressions": 2659, "position": 8.3}, {"date": "05-04", "clicks": 50, "impressions": 2591, "position": 7.8}, {"date": "05-05", "clicks": 45, "impressions": 2599, "position": 7.7}, {"date": "05-06", "clicks": 43, "impressions": 3035, "position": 7.9}, {"date": "05-07", "clicks": 40, "impressions": 2530, "position": 8.2}, {"date": "05-08", "clicks": 42, "impressions": 2838, "position": 7.7}, {"date": "05-09", "clicks": 38, "impressions": 3123, "position": 7.2}, {"date": "05-10", "clicks": 56, "impressions": 3233, "position": 7.6}, {"date": "05-11", "clicks": 47, "impressions": 3006, "position": 8.2}, {"date": "05-12", "clicks": 41, "impressions": 2657, "position": 8.0}, {"date": "05-13", "clicks": 54, "impressions": 2649, "position": 8.2}, {"date": "05-14", "clicks": 49, "impressions": 2582, "position": 8.5}, {"date": "05-15", "clicks": 63, "impressions": 2573, "position": 7.8}, {"date": "05-16", "clicks": 67, "impressions": 2516, "position": 7.7}, {"date": "05-17", "clicks": 60, "impressions": 2667, "position": 7.5}, {"date": "05-18", "clicks": 54, "impressions": 2570, "position": 8.1}, {"date": "05-19", "clicks": 48, "impressions": 2303, "position": 7.9}, {"date": "05-20", "clicks": 53, "impressions": 2333, "position": 8.2}, {"date": "05-21", "clicks": 54, "impressions": 3216, "position": 9.1}, {"date": "05-22", "clicks": 43, "impressions": 3220, "position": 9.3}, {"date": "05-23", "clicks": 41, "impressions": 2527, "position": 7.8}, {"date": "05-24", "clicks": 48, "impressions": 2454, "position": 8.0}, {"date": "05-25", "clicks": 52, "impressions": 2565, "position": 8.2}, {"date": "05-26", "clicks": 46, "impressions": 2210, "position": 8.0}, {"date": "05-27", "clicks": 55, "impressions": 2405, "position": 8.2}, {"date": "05-28", "clicks": 43, "impressions": 2190, "position": 8.6}, {"date": "05-29", "clicks": 51, "impressions": 2173, "position": 8.5}, {"date": "05-30", "clicks": 31, "impressions": 2116, "position": 8.6}, {"date": "05-31", "clicks": 40, "impressions": 2153, "position": 7.7}, {"date": "06-01", "clicks": 47, "impressions": 2107, "position": 9.0}, {"date": "06-02", "clicks": 30, "impressions": 1860, "position": 8.2}, {"date": "06-03", "clicks": 36, "impressions": 1807, "position": 8.0}, {"date": "06-04", "clicks": 35, "impressions": 1716, "position": 8.7}, {"date": "06-05", "clicks": 35, "impressions": 1760, "position": 8.7}, {"date": "06-06", "clicks": 38, "impressions": 1808, "position": 8.2}, {"date": "06-07", "clicks": 31, "impressions": 1942, "position": 8.2}, {"date": "06-08", "clicks": 46, "impressions": 1722, "position": 8.2}, {"date": "06-09", "clicks": 40, "impressions": 1536, "position": 8.3}, {"date": "06-10", "clicks": 39, "impressions": 4516, "position": 12.9}, {"date": "06-11", "clicks": 32, "impressions": 1706, "position": 9.0}, {"date": "06-12", "clicks": 33, "impressions": 1527, "position": 8.9}, {"date": "06-13", "clicks": 32, "impressions": 1536, "position": 9.5}, {"date": "06-14", "clicks": 28, "impressions": 1639, "position": 8.7}, {"date": "06-15", "clicks": 39, "impressions": 1652, "position": 8.9}, {"date": "06-16", "clicks": 40, "impressions": 1600, "position": 9.7}, {"date": "06-17", "clicks": 29, "impressions": 1352, "position": 10.4}, {"date": "06-18", "clicks": 22, "impressions": 1336, "position": 10.5}, {"date": "06-19", "clicks": 14, "impressions": 1344, "position": 10.7}, {"date": "06-20", "clicks": 27, "impressions": 1248, "position": 10.1}, {"date": "06-21", "clicks": 30, "impressions": 1193, "position": 9.3}, {"date": "06-22", "clicks": 30, "impressions": 1146, "position": 10.4}, {"date": "06-23", "clicks": 37, "impressions": 1689, "position": 12.0}, {"date": "06-24", "clicks": 32, "impressions": 1041, "position": 10.7}, {"date": "06-25", "clicks": 24, "impressions": 2167, "position": 14.5}, {"date": "06-26", "clicks": 31, "impressions": 1999, "position": 12.2}, {"date": "06-27", "clicks": 28, "impressions": 1654, "position": 11.5}, {"date": "06-28", "clicks": 21, "impressions": 1282, "position": 9.8}, {"date": "06-29", "clicks": 27, "impressions": 1252, "position": 9.0}, {"date": "06-30", "clicks": 26, "impressions": 1463, "position": 8.2}, {"date": "07-01", "clicks": 31, "impressions": 1187, "position": 9.3}, {"date": "07-02", "clicks": 32, "impressions": 1617, "position": 10.7}, {"date": "07-03", "clicks": 36, "impressions": 1311, "position": 9.3}, {"date": "07-04", "clicks": 30, "impressions": 1469, "position": 9.2}, {"date": "07-05", "clicks": 34, "impressions": 1213, "position": 9.0}, {"date": "07-06", "clicks": 30, "impressions": 1225, "position": 11.3}, {"date": "07-07", "clicks": 29, "impressions": 8375, "position": 14.5}, {"date": "07-08", "clicks": 33, "impressions": 1028, "position": 9.5}, {"date": "07-09", "clicks": 24, "impressions": 1071, "position": 10.0}, {"date": "07-10", "clicks": 22, "impressions": 1083, "position": 11.1}, {"date": "07-11", "clicks": 20, "impressions": 1118, "position": 11.4}, {"date": "07-12", "clicks": 30, "impressions": 1076, "position": 9.9}, {"date": "07-13", "clicks": 31, "impressions": 1041, "position": 10.6}, {"date": "07-14", "clicks": 33, "impressions": 886, "position": 9.9}, {"date": "07-15", "clicks": 25, "impressions": 981, "position": 10.0}, {"date": "07-16", "clicks": 28, "impressions": 950, "position": 9.8}, {"date": "07-17", "clicks": 19, "impressions": 940, "position": 12.0}, {"date": "07-18", "clicks": 23, "impressions": 921, "position": 9.9}, {"date": "07-19", "clicks": 20, "impressions": 921, "position": 9.3}, {"date": "07-20", "clicks": 29, "impressions": 1024, "position": 10.2}, {"date": "07-21", "clicks": 21, "impressions": 907, "position": 9.7}, {"date": "07-22", "clicks": 33, "impressions": 1155, "position": 9.9}, {"date": "07-23", "clicks": 29, "impressions": 1033, "position": 10.3}, {"date": "07-24", "clicks": 31, "impressions": 961, "position": 10.3}, {"date": "07-25", "clicks": 35, "impressions": 1069, "position": 9.3}, {"date": "07-26", "clicks": 35, "impressions": 985, "position": 10.4}, {"date": "07-27", "clicks": 20, "impressions": 1015, "position": 10.1}, {"date": "07-28", "clicks": 37, "impressions": 1060, "position": 9.9}, {"date": "07-29", "clicks": 24, "impressions": 1032, "position": 12.2}, {"date": "07-30", "clicks": 30, "impressions": 1050, "position": 13.1}, {"date": "07-31", "clicks": 30, "impressions": 1023, "position": 11.5}, {"date": "08-01", "clicks": 35, "impressions": 1059, "position": 11.4}];
+
+if (typeof Chart === 'undefined') {
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.insertAdjacentHTML('afterend','<p style="color:#6b6157;font-size:14px">圖表載入失敗（無法載入 Chart.js）。表格與數字不受影響。</p>');
+  });
+} else {
+  Chart.defaults.font.size = 13;
+  Chart.defaults.font.family = "'Noto Sans TC','PingFang TC',sans-serif";
+  Chart.defaults.color = '#6b6157';
+
+  new Chart(document.getElementById('weekClicks'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.clicks),
+        backgroundColor: weekly.map(w=> w.period==='p1' ? '#d8d0c4' : '#6b7a45'),
+        borderRadius:4, maxBarThickness:44 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y + ' 點擊' } } },
+      scales:{ y:{ beginAtZero:true, grid:{color:'#e9e1d5'} }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('weekImpr'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.impressions),
+        backgroundColor: weekly.map(w=> w.period==='p1' ? '#d8d0c4' : '#a8794c'),
+        borderRadius:4, maxBarThickness:44 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y.toLocaleString() + ' 曝光' } } },
+      scales:{ y:{ beginAtZero:true, grid:{color:'#e9e1d5'}, ticks:{ callback:(v)=> v.toLocaleString() } }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('weekCtr'), {
+    type:'line',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.ctr),
+        borderColor:'#6b7a45', backgroundColor:'rgba(107,122,69,0.14)', fill:true, tension:0.35,
+        pointRadius:3, pointBackgroundColor:'#6b7a45', borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y + '%' } } },
+      scales:{ y:{ beginAtZero:true, grid:{color:'#e9e1d5'}, ticks:{ callback:(v)=> v + '%' } }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('rankLine'), {
+    type:'line',
+    data:{ labels: daily.map(d=>d.date),
+      datasets:[{ data: daily.map(d=>d.position),
+        borderColor:'#9c3a24', backgroundColor:'rgba(156,58,36,0.10)', fill:true, tension:0.35, pointRadius:0, borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{ reverse:true, grid:{color:'#e9e1d5'} },
+        x:{ ticks:{maxTicksLimit:12}, grid:{display:false} } } }
+  });
+}
+</script>
+
+</body>
+</html>

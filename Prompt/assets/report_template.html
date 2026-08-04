@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--
+  GSC growth-comparison report template.
+  Replace: page title, hero copy, __PERIOD_OLD__/__PERIOD_NEW__/__DAYS_*__,
+  the four headline growth cards, chart notes, insight paragraphs, and the
+  JSON placeholders __TARGETS__ / __WEEKLY__ / __DAILY__ at the bottom.
+  Data shapes (see assets/compute_example.py):
+    TARGETS[]: {url,title,category,p1_clicks,p2_clicks,p1_impr,p2_impr,
+                p1_pos,p2_pos,pos_up,p1_cpd,p2_cpd,growth}
+    WEEKLY[] : {label,clicks,impressions,rank,period}   period in {'p1','p2'}
+    DAILY[]  : {date,clicks,impressions,position}
+  Keep the `typeof Chart === 'undefined'` guard so a blocked CDN can't blank
+  the report. Exclude any not-yet-finalized trailing week BEFORE injecting.
+-->
+<title>SEO 成長對比報告</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root{
+    --paper:#ffffff; --bg-tint:#f5f6f3; --ink:#111111; --ink-soft:#555555; --line:#dddddd;
+    --green:#4f6b3a; --green-deep:#34492a; --green-light:#e6ebde; --green-dark:#27361e;
+    --blue:#3a6ea5; --blue-deep:#1f4566; --blue-light:#e4edf4;
+    --orange:#c1622f; --orange-deep:#7a3c1a; --orange-light:#f4e6da; --grey-mid:#9a9a9a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Noto Sans TC','PingFang TC','Helvetica Neue',Arial,sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.75; font-size:17px; -webkit-font-smoothing:antialiased; }
+
+  .hero{ background:var(--green-dark); color:#fff; padding:66px 8vw 52px; position:relative; }
+  .hero::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:6px; background:var(--green); }
+  .hero-eyebrow{ font-size:15px; letter-spacing:0.1em; color:#cdd9c0; font-weight:500; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+  .hero-eyebrow::before{ content:""; width:28px; height:1px; background:#cdd9c0; }
+  .hero h1{ font-size:clamp(30px,4.4vw,46px); font-weight:700; color:#fff; max-width:820px; }
+  .hero-sub{ margin-top:16px; font-size:18px; color:#d6ddcd; max-width:660px; }
+  .period-compare{ margin-top:34px; display:flex; align-items:stretch; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.18); padding-top:26px; }
+  .pc-box{ padding-right:34px; }
+  .pc-box .pc-tag{ display:inline-block; font-size:12.5px; padding:2px 9px; border-radius:5px; font-weight:500; margin-bottom:8px; }
+  .pc-box.old .pc-tag{ background:rgba(255,255,255,0.16); color:#d6ddcd; }
+  .pc-box.now .pc-tag{ background:#8fb36a; color:#1d2915; }
+  .pc-box .pc-date{ font-size:19px; color:#fff; font-weight:700; }
+  .pc-box .pc-days{ font-size:14px; color:#b9c4ad; margin-top:2px; }
+  .pc-arrow{ display:flex; align-items:center; color:#8fb36a; font-size:26px; padding:0 30px 0 0; }
+
+  main{ max-width:1080px; margin:0 auto; padding:0 8vw 90px; }
+  section{ padding-top:60px; }
+  .section-head{ margin-bottom:26px; }
+  .section-num{ font-size:14.5px; color:var(--green-deep); font-weight:500; letter-spacing:0.06em; }
+  .section-title{ font-size:28px; font-weight:700; margin-top:8px; }
+  .section-desc{ font-size:17px; color:var(--ink-soft); margin-top:10px; max-width:720px; }
+
+  .growth-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+  .growth-card{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:22px 20px; position:relative; overflow:hidden; }
+  .growth-card.hero-metric{ border-color:var(--green); background:linear-gradient(180deg,#fff,var(--green-light)); }
+  .gc-label{ font-size:14.5px; color:var(--ink-soft); }
+  .gc-pct{ font-size:42px; font-weight:700; color:var(--green-deep); letter-spacing:-0.02em; line-height:1.15; margin-top:10px; }
+  .gc-pct.down{ color:var(--orange-deep); }
+  .gc-flow{ margin-top:12px; font-size:15px; color:var(--ink-soft); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .gc-flow .from{ color:var(--grey-mid); }
+  .gc-flow .arrow{ color:var(--green); font-weight:700; }
+  .gc-flow .to{ color:var(--ink); font-weight:700; font-size:17px; }
+  .gc-note{ font-size:13px; color:var(--ink-soft); margin-top:8px; }
+
+  .chart-card{ background:var(--paper); border:1px solid var(--line); border-radius:16px; padding:26px 26px 18px; margin-top:16px; }
+  .chart-card h3{ font-size:18px; font-weight:700; margin-bottom:6px; }
+  .chart-note{ font-size:15px; color:var(--ink-soft); margin-bottom:16px; }
+  .legend-row{ display:flex; gap:18px; flex-wrap:wrap; margin-bottom:14px; font-size:14.5px; color:var(--ink-soft); }
+  .legend-row span{ display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+
+  .cmp-list{ display:flex; flex-direction:column; gap:10px; }
+  .cmp-row{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:16px 18px; display:grid; grid-template-columns:1fr 380px 92px; gap:18px; align-items:center; }
+  .cmp-row.star{ border-color:var(--green); background:linear-gradient(0deg,#fff,var(--green-light)); }
+  .cmp-title a{ font-size:16.5px; font-weight:500; color:var(--ink); text-decoration:none; line-height:1.5; }
+  .cmp-title a:hover{ color:var(--green-deep); text-decoration:underline; }
+  .cmp-tags{ margin-top:7px; display:flex; gap:7px; flex-wrap:wrap; }
+  .tag{ font-size:12.5px; padding:2px 9px; border-radius:6px; font-weight:500; background:var(--bg-tint); color:var(--ink-soft); white-space:nowrap; }
+  .tag.cat{ background:var(--blue-light); color:var(--blue-deep); }
+  .tag.new{ background:var(--orange-light); color:var(--orange-deep); }
+  .cmp-nums{ display:flex; gap:14px; }
+  .nb{ flex:1; }
+  .nb-lbl{ font-size:12px; color:var(--ink-soft); }
+  .nb-val{ font-size:15px; margin-top:2px; font-variant-numeric:tabular-nums; }
+  .nb-val .old{ color:var(--grey-mid); }
+  .nb-val .arw{ color:var(--green); margin:0 4px; }
+  .nb-val .arw.dn{ color:var(--orange); }
+  .nb-val .new{ font-weight:700; color:var(--ink); }
+  .nb-val .new.blue{ color:var(--blue-deep); }
+  .nb-val .new.dn{ color:var(--orange-deep); }
+  .cmp-badge{ text-align:center; font-size:17px; font-weight:700; padding:8px 6px; border-radius:9px; background:var(--green-light); color:var(--green-deep); white-space:nowrap; }
+  .cmp-badge.flat{ background:var(--bg-tint); color:var(--ink-soft); }
+  .cmp-badge.down{ background:var(--orange-light); color:var(--orange-deep); }
+  .cmp-badge.brand{ background:var(--blue-light); color:var(--blue-deep); font-size:15px; }
+
+  .insight{ border-left:3px solid var(--green); background:var(--bg-tint); border-radius:0 12px 12px 0; padding:18px 22px; margin-top:20px; font-size:16.5px; }
+  .insight strong{ color:var(--green-deep); }
+  .insight.warn{ border-left-color:var(--orange); background:var(--orange-light); }
+  .insight.warn strong{ color:var(--orange-deep); }
+
+  footer{ background:var(--green-dark); color:#b9c4ad; padding:38px 8vw; font-size:15px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; }
+  footer .brand{ color:#fff; font-weight:700; }
+
+  @media (max-width:860px){
+    .growth-grid{ grid-template-columns:repeat(2,1fr); }
+    .cmp-row{ grid-template-columns:1fr; gap:12px; }
+    .cmp-badge{ justify-self:start; padding:6px 16px; }
+    .hero{ padding:52px 6vw 42px; } main{ padding:0 6vw 70px; } .pc-arrow{ padding:0 18px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">__AGENCY_NAME__｜成長對比報告</div>
+  <h1>__CLIENT_NAME__<br>__HERO_HEADLINE__</h1>
+  <p class="hero-sub">__HERO_SUB__</p>
+  <div class="period-compare">
+    <div class="pc-box old">
+      <span class="pc-tag">上次報告</span>
+      <div class="pc-date">__PERIOD_OLD__</div>
+      <div class="pc-days">__DAYS_OLD__ 天</div>
+    </div>
+    <div class="pc-arrow">→</div>
+    <div class="pc-box now">
+      <span class="pc-tag">這次新增</span>
+      <div class="pc-date">__PERIOD_NEW__</div>
+      <div class="pc-days">__DAYS_NEW__ 天</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section>
+    <div class="section-head">
+      <div class="section-num">01 — 一眼看懂</div>
+      <div class="section-title">關鍵數字的成長</div>
+      <p class="section-desc">下面每張卡片的大數字是成長幅度，底下是「上次 → 這次」的平均每天表現。</p>
+    </div>
+    <div class="growth-grid">
+      <div class="growth-card hero-metric">
+        <div class="gc-label">平均每天點擊</div>
+        <div class="gc-pct">__CLICKS_GROWTH__</div>
+        <div class="gc-flow"><span class="from">__CLICKS_OLD__</span><span class="arrow">→</span><span class="to">__CLICKS_NEW__</span></div>
+        <div class="gc-note">__CLICKS_NOTE__</div>
+      </div>
+      <div class="growth-card">
+        <div class="gc-label">平均每天曝光</div>
+        <div class="gc-pct">__IMPR_GROWTH__</div>
+        <div class="gc-flow"><span class="from">__IMPR_OLD__</span><span class="arrow">→</span><span class="to">__IMPR_NEW__</span></div>
+        <div class="gc-note">被更多人看到</div>
+      </div>
+      <div class="growth-card">
+        <div class="gc-label">點閱率</div>
+        <div class="gc-pct">__CTR_GROWTH__</div>
+        <div class="gc-flow"><span class="from">__CTR_OLD__</span><span class="arrow">→</span><span class="to">__CTR_NEW__</span></div>
+        <div class="gc-note">標題更能吸引人點</div>
+      </div>
+      <div class="growth-card">
+        <div class="gc-label">平均排名</div>
+        <div class="gc-pct">__POS_GROWTH__</div>
+        <div class="gc-flow"><span class="from">__POS_OLD__</span><span class="arrow">→</span><span class="to">__POS_NEW__</span></div>
+        <div class="gc-note">數字越小越前面</div>
+      </div>
+    </div>
+    <div class="insight">
+      <strong>重點：</strong>__HEADLINE_INSIGHT__
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-num">02 — 走勢</div>
+      <div class="section-title">點擊與曝光同步成長</div>
+      <p class="section-desc">灰色是上次報告的期間，綠／藍色是這次新增的期間。</p>
+    </div>
+
+    <div class="chart-card">
+      <h3>每週點擊數</h3>
+      <p class="chart-note">__WEEK_CLICKS_NOTE__</p>
+      <div class="legend-row">
+        <span><span class="dot" style="background:#9a9a9a"></span>上次期間</span>
+        <span><span class="dot" style="background:#4f6b3a"></span>這次期間</span>
+      </div>
+      <div style="position:relative;height:290px;"><canvas id="weekClicks" role="img" aria-label="每週點擊長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每週曝光數</h3>
+      <p class="chart-note">__WEEK_IMPR_NOTE__</p>
+      <div class="legend-row">
+        <span><span class="dot" style="background:#9a9a9a"></span>上次期間</span>
+        <span><span class="dot" style="background:#3a6ea5"></span>這次期間</span>
+      </div>
+      <div style="position:relative;height:290px;"><canvas id="weekImpr" role="img" aria-label="每週曝光長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每天的平均排名</h3>
+      <p class="chart-note">線往下走代表排名往前進（數字越小越前面）</p>
+      <div style="position:relative;height:230px;"><canvas id="rankLine" role="img" aria-label="每日平均排名折線圖"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <div class="section-num">03 — 重點文章</div>
+      <div class="section-title">重點頁面的成長對比</div>
+      <p class="section-desc">右邊是點擊的成長幅度。排名的數字越小代表越前面，橘色表示數字變大。</p>
+    </div>
+    <div class="cmp-list" id="cmpList"></div>
+    <div class="insight">__TARGETS_INSIGHT__</div>
+    <div class="insight warn">
+      <strong>關於排名數字變大：</strong>排名退步的幾篇，剛好都是曝光大幅成長的那幾篇。原因是文章開始被更多關鍵字帶出來，其中一部分是競爭比較激烈、排在後面的字，這些新增的低位曝光把平均值拉低了。GSC 的排名是「所有關鍵字的平均」，不是單一關鍵字的名次，所以覆蓋範圍變廣時，平均數字反而會變大。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <span class="brand">__AGENCY_NAME__</span> 為「__CLIENT_NAME__」製作
+  <span>資料來源：Google Search Console（__FULL_RANGE__）</span>
+</footer>
+
+<script>
+const targets = __TARGETS__;
+const weeklyAll = __WEEKLY__;
+const dailyAll  = __DAILY__;
+
+// Exclude a not-yet-finalized trailing period if present. Set to null to keep all.
+const DROP_LABEL = __DROP_LABEL__;   // e.g. '07/20' or null
+const weekly = DROP_LABEL ? weeklyAll.filter(w => w.label !== DROP_LABEL) : weeklyAll;
+const daily  = DROP_LABEL ? dailyAll.filter(d => d.date !== DROP_LABEL) : dailyAll;
+
+// ---- priority-page comparison rows (rendered even if charts fail) ----
+const list = document.getElementById('cmpList');
+targets.forEach(a=>{
+  const row = document.createElement('div');
+  const isStar = a.growth !== null && a.growth >= 400;
+  row.className = 'cmp-row' + (isStar ? ' star' : '');
+  let badge, badgeCls;
+  if(a.growth === null){ badge = '從 0 開始'; badgeCls = 'brand'; }
+  else if(a.growth >= 20){ badge = '+' + a.growth + '%'; badgeCls = ''; }
+  else if(a.growth >= 0){ badge = '+' + a.growth + '%'; badgeCls = 'flat'; }
+  else { badge = a.growth + '%'; badgeCls = 'down'; }
+  row.innerHTML = `
+    <div class="cmp-title">
+      <a href="${a.url}" target="_blank" rel="noopener">${a.title}</a>
+      <div class="cmp-tags">
+        <span class="tag cat">${a.category}</span>
+        <span class="tag">每天 ${a.p1_cpd} → ${a.p2_cpd} 次</span>
+      </div>
+    </div>
+    <div class="cmp-nums">
+      <div class="nb"><div class="nb-lbl">點擊</div>
+        <div class="nb-val"><span class="old">${a.p1_clicks}</span><span class="arw">→</span><span class="new">${a.p2_clicks}</span></div></div>
+      <div class="nb"><div class="nb-lbl">曝光</div>
+        <div class="nb-val"><span class="old">${a.p1_impr}</span><span class="arw">→</span><span class="new blue">${a.p2_impr}</span></div></div>
+      <div class="nb"><div class="nb-lbl">排名</div>
+        <div class="nb-val"><span class="old">${a.p1_pos}</span><span class="arw ${a.pos_up?'':'dn'}">→</span><span class="new ${a.pos_up?'':'dn'}">${a.p2_pos}</span></div></div>
+    </div>
+    <div class="cmp-badge ${badgeCls}">${badge}</div>`;
+  list.appendChild(row);
+});
+
+// ---- charts (guarded: a blocked CDN must not blank the report) ----
+if (typeof Chart === 'undefined') {
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.insertAdjacentHTML('afterend','<p style="color:#555;font-size:15px">圖表載入失敗，請確認網路連線後重新整理。</p>');
+  });
+} else {
+  Chart.defaults.font.size = 14;
+  Chart.defaults.font.family = "'Noto Sans TC','PingFang TC',sans-serif";
+  Chart.defaults.color = '#555555';
+
+  new Chart(document.getElementById('weekClicks'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.clicks),
+        backgroundColor: weekly.map(w=> w.period==='p1' ? '#9a9a9a' : '#4f6b3a'),
+        borderRadius:5, maxBarThickness:46 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y + ' 次點擊' } } },
+      scales:{ y:{ beginAtZero:true, title:{display:true,text:'每週點擊'}, grid:{color:'#e5e5e5'} }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('weekImpr'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.impressions),
+        backgroundColor: weekly.map(w=> w.period==='p1' ? '#9a9a9a' : '#3a6ea5'),
+        borderRadius:5, maxBarThickness:46 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y.toLocaleString() + ' 次曝光' } } },
+      scales:{ y:{ beginAtZero:true, title:{display:true,text:'每週曝光'}, grid:{color:'#e5e5e5'},
+        ticks:{ callback:(v)=> v.toLocaleString() } }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('rankLine'), {
+    type:'line',
+    data:{ labels: daily.map(d=>d.date),
+      datasets:[{ data: daily.map(d=>d.position),
+        borderColor:'#c1622f', backgroundColor:'rgba(193,98,47,0.1)', fill:true, tension:0.35, pointRadius:0, borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{ reverse:true, title:{display:true,text:'排名（越低越前面）'}, grid:{color:'#e5e5e5'} },
+        x:{ ticks:{maxTicksLimit:12}, grid:{display:false} } } }
+  });
+}
+</script>
+
+</body>
+</html>
