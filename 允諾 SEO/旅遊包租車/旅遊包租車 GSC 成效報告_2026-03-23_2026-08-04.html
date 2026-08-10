@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>旅遊包租車 · 搜尋成效數據（2026/03/23 – 2026/08/04）</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  /* 黑金配色：主色取自使用者指定的品牌方向（黑 + 金）
+     語意分工：金 = 點擊／正向；黑 = 曝光；磚紅 = 警示、0 成效 */
+  :root{
+    --paper:#ffffff; --bg-tint:#f8f6f0; --ink:#181510; --ink-soft:#68604f; --line:#e5ddc8;
+    --gold:#b3872e; --gold-deep:#87661f; --gold-light:#f7eed7;
+    --ink-dark:#161310; --ink-soft2:#3a352c;
+    --warn:#a13f2b; --warn-deep:#7a2e1f; --warn-light:#f7e3dd; --grey-mid:#a79c86;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{ font-family:'Noto Sans TC','PingFang TC','Helvetica Neue',Arial,sans-serif;
+    background:var(--paper); color:var(--ink); line-height:1.7; font-size:16px; -webkit-font-smoothing:antialiased; }
+
+  .hero{ background:var(--ink-dark); color:#fff; padding:52px 8vw 40px; position:relative; }
+  .hero::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:5px; background:var(--gold); }
+  .hero-eyebrow{ font-size:14px; letter-spacing:0.1em; color:#d8cba3; font-weight:500; margin-bottom:14px; display:flex; align-items:center; gap:10px; }
+  .hero-eyebrow::before{ content:""; width:26px; height:1px; background:#d8cba3; }
+  .hero h1{ font-size:clamp(26px,3.6vw,38px); font-weight:700; color:#fff; }
+  .hero-range{ margin-top:10px; font-size:16px; color:#ddd2b8; font-variant-numeric:tabular-nums; }
+  .period-compare{ margin-top:26px; display:flex; align-items:stretch; flex-wrap:wrap; border-top:1px solid rgba(255,255,255,0.18); padding-top:20px; }
+  .pc-box{ padding-right:30px; }
+  .pc-box .pc-tag{ display:inline-block; font-size:12px; padding:2px 9px; border-radius:5px; font-weight:500; margin-bottom:6px; }
+  .pc-box.old .pc-tag{ background:rgba(255,255,255,0.16); color:#ddd2b8; }
+  .pc-box.now .pc-tag{ background:var(--gold); color:#201a0a; }
+  .pc-box .pc-date{ font-size:17px; color:#fff; font-weight:700; font-variant-numeric:tabular-nums; }
+  .pc-box .pc-days{ font-size:13px; color:#b5a97e; margin-top:2px; }
+  .pc-arrow{ display:flex; align-items:center; color:var(--gold); font-size:24px; padding:0 26px 0 0; }
+
+  main{ max-width:1120px; margin:0 auto; padding:0 8vw 70px; }
+  section{ padding-top:52px; }
+  .section-num{ font-size:13.5px; color:var(--gold-deep); font-weight:500; letter-spacing:0.06em; }
+  .section-title{ font-size:25px; font-weight:700; margin-top:6px; margin-bottom:18px; }
+  .sub-title{ font-size:18px; font-weight:700; margin-top:34px; margin-bottom:2px; }
+  .meta{ font-size:14px; color:var(--ink-soft); margin-bottom:14px; }
+
+  .grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  .grid.g3{ grid-template-columns:repeat(3,1fr); }
+  .card{ background:var(--paper); border:1px solid var(--line); border-radius:12px; padding:18px 18px 16px; }
+  .card.good{ border-color:var(--gold); background:linear-gradient(180deg,#fff,var(--gold-light)); }
+  .card.bad{ border-color:var(--warn); background:linear-gradient(180deg,#fff,var(--warn-light)); }
+  .c-label{ font-size:13.5px; color:var(--ink-soft); }
+  .c-val{ font-size:34px; font-weight:700; color:var(--ink); letter-spacing:-0.02em; line-height:1.2; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .c-val.gold{ color:var(--gold-deep); } .c-val.dark{ color:var(--ink-soft2); } .c-val.warn{ color:var(--warn); }
+  .c-sub{ margin-top:8px; font-size:14px; color:var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .c-sub b{ color:var(--ink); }
+  .c-sub .ar{ color:var(--grey-mid); margin:0 5px; }
+  .c-note{ font-size:12.5px; color:var(--grey-mid); margin-top:6px; }
+
+  .chart-card{ background:var(--paper); border:1px solid var(--line); border-radius:14px; padding:22px 22px 14px; margin-top:14px; }
+  .chart-card h3{ font-size:17px; font-weight:700; }
+  .legend-row{ display:flex; gap:16px; flex-wrap:wrap; margin:10px 0 12px; font-size:13.5px; color:var(--ink-soft); }
+  .legend-row span{ display:inline-flex; align-items:center; gap:6px; }
+  .dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .table-wrap{ overflow-x:auto; }
+  table{ width:100%; border-collapse:collapse; margin-top:12px; font-size:15px; }
+  th{ text-align:right; font-size:13px; color:var(--ink-soft); font-weight:500; padding:9px 11px; border-bottom:2px solid var(--line); white-space:nowrap; }
+  th:first-child, th.tl{ text-align:left; }
+  td{ padding:10px 11px; border-bottom:1px solid var(--line); font-variant-numeric:tabular-nums; }
+  td.tl{ text-align:left; }
+  td.num{ text-align:right; white-space:nowrap; }
+  td.strong{ font-weight:700; }
+  td.dim{ color:var(--grey-mid); }
+  td.dark{ color:var(--ink-soft2); }
+  td.gold{ color:var(--gold-deep); font-weight:700; }
+  td.warn{ color:var(--warn); font-weight:700; }
+  td a{ color:var(--ink); text-decoration:none; }
+  td a:hover{ color:var(--gold-deep); text-decoration:underline; }
+  tbody tr:hover{ background:var(--bg-tint); }
+  .tag{ font-size:12px; padding:1px 7px; border-radius:5px; background:var(--bg-tint); color:var(--ink-soft); white-space:nowrap; }
+  .tag.gold{ background:var(--gold-light); color:var(--gold-deep); }
+  .tag.warn{ background:var(--warn-light); color:var(--warn-deep); }
+
+  footer{ background:var(--ink-dark); color:#b5a97e; padding:30px 8vw; font-size:14px; display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+  footer .brand{ color:#fff; font-weight:700; }
+
+  @media (max-width:860px){
+    .grid, .grid.g3{ grid-template-columns:repeat(2,1fr); }
+    .hero{ padding:42px 6vw 34px; } main{ padding:0 6vw 56px; } .pc-arrow{ padding:0 16px 0 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">允諾行銷｜Google Search Console 成效數據</div>
+  <h1>旅遊包租車 Roaming Taiwan</h1>
+  <div class="hero-range">2026/03/23 – 2026/08/04　共 135 天</div>
+  <div class="period-compare">
+    <div class="pc-box old">
+      <span class="pc-tag">前半段</span>
+      <div class="pc-date">2026/03/23 – 2026/05/28</div>
+      <div class="pc-days">67 天</div>
+    </div>
+    <div class="pc-arrow">→</div>
+    <div class="pc-box now">
+      <span class="pc-tag">後半段</span>
+      <div class="pc-date">2026/05/29 – 2026/08/03</div>
+      <div class="pc-days">67 天</div>
+    </div>
+  </div>
+</div>
+
+<main>
+
+  <section>
+    <div class="section-num">01</div>
+    <div class="section-title">期間總計</div>
+    <div class="grid">
+      <div class="card good">
+        <div class="c-label">點擊</div>
+        <div class="c-val gold">427</div>
+        <div class="c-sub">每天 <b>3.16</b></div>
+      </div>
+      <div class="card">
+        <div class="c-label">曝光</div>
+        <div class="c-val dark">17,734</div>
+        <div class="c-sub">每天 <b>131.4</b></div>
+      </div>
+      <div class="card">
+        <div class="c-label">點閱率</div>
+        <div class="c-val">2.41%</div>
+        <div class="c-sub">427 ÷ 17,734</div>
+      </div>
+      <div class="card">
+        <div class="c-label">平均排名</div>
+        <div class="c-val">7.94</div>
+        <div class="c-note">曝光加權平均；數字越小越前面</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">02</div>
+    <div class="section-title">前 67 天 vs 後 67 天</div>
+    <div class="grid">
+      <div class="card good">
+        <div class="c-label">每天點擊</div>
+        <div class="c-val gold">+59%</div>
+        <div class="c-sub">2.45<span class="ar">→</span><b>3.90</b></div>
+      </div>
+      <div class="card good">
+        <div class="c-label">每天曝光</div>
+        <div class="c-val gold">+76%</div>
+        <div class="c-sub">95.2<span class="ar">→</span><b>167.8</b></div>
+      </div>
+      <div class="card">
+        <div class="c-label">點閱率</div>
+        <div class="c-val dark">-10%</div>
+        <div class="c-sub">2.57%<span class="ar">→</span><b>2.32%</b></div>
+        <div class="c-note">曝光成長快於點擊，稀釋了點閱率</div>
+      </div>
+      <div class="card">
+        <div class="c-label">平均排名</div>
+        <div class="c-val dark">-0.08</div>
+        <div class="c-sub">7.89<span class="ar">→</span><b>7.97</b></div>
+        <div class="c-note">曝光同步大增，屬覆蓋範圍擴張</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">03</div>
+    <div class="section-title">每週走勢</div>
+    <p class="meta">已排除 08/03 當週（僅 2 天）。</p>
+
+    <div class="chart-card">
+      <h3>每週點擊</h3>
+      <div style="position:relative;height:280px;"><canvas id="weekClicks" role="img" aria-label="每週點擊長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每週曝光</h3>
+      <div style="position:relative;height:280px;"><canvas id="weekImpr" role="img" aria-label="每週曝光長條圖"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <h3>每日平均排名</h3>
+      <div class="legend-row"><span>Y 軸已反轉：線往下 = 排名往前</span></div>
+      <div style="position:relative;height:230px;"><canvas id="rankLine" role="img" aria-label="每日平均排名折線圖"></canvas></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-num">04</div>
+    <div class="section-title">8 篇重點文章</div>
+    <p class="meta">依「上線後日均點擊」排序。上線日為該頁在 GSC 中首次取得曝光的日期，用來推估上線／被索引時間，非官方發布日期。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th>#</th><th class="tl">文章</th><th>首次曝光</th><th>上線天數</th><th>上線後日均點擊</th><th>期間點擊</th><th>佔全站</th><th>期間曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="num dim">1</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/baomuche-round-island-guide/" target="_blank" rel="noopener">保母車環島詳細攻略：天數、費用、客製行程一次看懂</a><span class="tag warn" style="margin-left:6px">樣本僅 5 天</span></td>
+        <td class="num">07/31</td><td class="num dim">5</td>
+        <td class="num gold strong">0.40</td><td class="num">2</td><td class="num dim">0.47%</td>
+        <td class="num dark">13</td><td class="num">15.38%</td><td class="num">5.15</td></tr>
+      <tr><td class="num dim">2</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/concert-charter-van-guide/" target="_blank" rel="noopener">2026 演唱會交通怎麼安排？保母車追星攻略【追星族必看】</a></td>
+        <td class="num">06/10</td><td class="num dim">56</td>
+        <td class="num gold strong">0.29</td><td class="num">16</td><td class="num dim">3.75%</td>
+        <td class="num dark">571</td><td class="num">2.80%</td><td class="num">5.79</td></tr>
+      <tr><td class="num dim">3</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/family-travel-charter-guide-2026/" target="_blank" rel="noopener">2026 親子包車首選：頂級保母車、兒童座椅、行程規劃全攻略</a></td>
+        <td class="num">03/26</td><td class="num dim">132</td>
+        <td class="num gold strong">0.19</td><td class="num">25</td><td class="num dim">5.85%</td>
+        <td class="num dark">946</td><td class="num">2.64%</td><td class="num">6.64</td></tr>
+      <tr><td class="num dim">4</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/travel-taiwan-elderly-charter-guide/" target="_blank" rel="noopener">2026 長輩旅遊包車首選：車款推薦以及旅遊攻略指南</a></td>
+        <td class="num">05/11</td><td class="num dim">86</td>
+        <td class="num gold strong">0.12</td><td class="num">10</td><td class="num dim">2.34%</td>
+        <td class="num dark">296</td><td class="num">3.38%</td><td class="num">6.42</td></tr>
+      <tr><td class="num dim">5</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/wedding-photo-van-bridal-guide/" target="_blank" rel="noopener">2026 婚紗外拍保母車推薦：新娘換裝補妝一台解決</a></td>
+        <td class="num">07/16</td><td class="num dim">20</td>
+        <td class="num gold strong">0.10</td><td class="num">2</td><td class="num dim">0.47%</td>
+        <td class="num dark">34</td><td class="num">5.88%</td><td class="num">4.41</td></tr>
+      <tr><td class="num dim">6</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/chiayi-xiding-chartered-car-2026/" target="_blank" rel="noopener">嘉義隙頂包車推薦 2026：親子、情侶、朋友揪團都適合</a></td>
+        <td class="num">05/06</td><td class="num dim">91</td>
+        <td class="num gold strong">0.07</td><td class="num">6</td><td class="num dim">1.41%</td>
+        <td class="num dark">201</td><td class="num">2.99%</td><td class="num">8.32</td></tr>
+      <tr><td class="num dim">7</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/island-luxury-travel-journal/luxury-van-travel-for-besties/" target="_blank" rel="noopener">2026 閨蜜聚會新玩法：搭乘豪華保母車去度假</a><span class="tag" style="margin-left:6px">網址曾搬遷</span></td>
+        <td class="num">05/21</td><td class="num dim">76</td>
+        <td class="num gold strong">0.03</td><td class="num">2</td><td class="num dim">0.47%</td>
+        <td class="num dark">167</td><td class="num">1.20%</td><td class="num">5.83</td></tr>
+      <tr><td class="num dim">8</td>
+        <td class="tl"><a href="https://roaming-taiwan.com/news/enterprise-nanny-car-vip-airport-transfer/" target="_blank" rel="noopener">2026 企業保母車推薦：從機場落地到商務會議</a><span class="tag warn" style="margin-left:6px">0 點擊</span></td>
+        <td class="num">06/25</td><td class="num dim">41</td>
+        <td class="num warn strong">0.00</td><td class="num">0</td><td class="num dim">0.00%</td>
+        <td class="num dark">55</td><td class="num warn">0%</td><td class="num">6.76</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin-top:14px">8 篇合計佔全站點擊 14.8%（63 / 427）。</p>
+  </section>
+
+  <section>
+    <div class="section-num">05</div>
+    <div class="section-title">策略驗證：8 篇重點文章目前排上第一頁的關鍵字</div>
+    <p class="meta">使用者於 google.com.tw 逐一手動查證。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">文章</th><th class="tl">已排上第一頁的關鍵字</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">親子包車首選</td><td class="tl">保母車推薦、親子保母車、親子包車</td></tr>
+      <tr><td class="tl">長輩旅遊包車</td><td class="tl">長輩保母車、長輩包車</td></tr>
+      <tr><td class="tl">嘉義隙頂包車</td><td class="tl">嘉義隙頂保母車、嘉義隙頂包車</td></tr>
+      <tr><td class="tl">閨蜜豪華保母車</td><td class="tl">閨蜜聚會保母車、閨蜜聚會包車、女性聚會保母車、女性聚會包車、聚會保母車、聚會包車</td></tr>
+      <tr><td class="tl">演唱會包車攻略</td><td class="tl">演唱會接駁車、演唱會保母車</td></tr>
+      <tr><td class="tl">企業保母車推薦</td><td class="tl warn">一個都沒上，需檢查文章</td></tr>
+      <tr><td class="tl">婚紗外拍保母車</td><td class="tl">婚紗保母車、婚紗外拍保母車、婚紗包車、婚紗外拍包車、婚禮保母車、婚禮包車</td></tr>
+      <tr><td class="tl">保母車環島攻略</td><td class="tl dim">上架時間太短，尚無資料</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin-top:14px">這些字在 GSC 單頁查詢匯出裡多數顯示 0 次曝光——不代表排名有問題，是 135 天內幾乎沒有真人搜過這個精確詞組。</p>
+  </section>
+
+  <section>
+    <div class="section-num">06</div>
+    <div class="section-title">全站最大流量頁</div>
+    <p class="meta">既有內容，非本次合作撰寫，列出作為對照組。</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">頁面</th><th>點擊</th><th>佔全站</th><th>曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/news/taiwan-round-trip-charter-guide/" target="_blank" rel="noopener">台灣環島包車行程怎麼安排？艦隊尊旅超完整攻略</a></td>
+        <td class="num strong">143</td><td class="num dim">33.5%</td>
+        <td class="num dark">11,438</td><td class="num">1.25%</td><td class="num">9.01</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">車型／服務頁</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">頁面</th><th>點擊</th><th>佔全站</th><th>曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/car-type-intro/豪華中巴-小可愛/" target="_blank" rel="noopener">豪華中巴．小可愛</a></td>
+        <td class="num strong">69</td><td class="num dim">16.2%</td><td class="num dark">1,627</td><td class="num">4.24%</td><td class="num">4.85</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/car-type-intro/艦隊輕旅優質保母車/" target="_blank" rel="noopener">艦隊輕旅優質保母車</a></td>
+        <td class="num strong">38</td><td class="num dim">8.9%</td><td class="num dark">449</td><td class="num">8.46%</td><td class="num">4.04</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/fleet-travel/" target="_blank" rel="noopener">艦隊輕旅行</a></td>
+        <td class="num strong">10</td><td class="num dim">2.3%</td><td class="num dark">304</td><td class="num">3.29%</td><td class="num">6.30</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/car-type-intro/minivan-20/" target="_blank" rel="noopener">Minivan 20 人座</a></td>
+        <td class="num strong">22</td><td class="num dim">5.2%</td><td class="num dark">378</td><td class="num">5.82%</td><td class="num">7.53</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/car-type-intro/mercedes-benz-vito-v-class/" target="_blank" rel="noopener">Mercedes-Benz Vito V-Class</a></td>
+        <td class="num strong">3</td><td class="num dim">0.7%</td><td class="num dark">122</td><td class="num">2.46%</td><td class="num">10.16</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">品牌／官網頁</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">頁面</th><th>點擊</th><th>佔全站</th><th>曝光</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/" target="_blank" rel="noopener">首頁</a></td>
+        <td class="num strong">76</td><td class="num dim">17.8%</td><td class="num dark">987</td><td class="num">7.70%</td><td class="num">5.81</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/services/" target="_blank" rel="noopener">服務項目</a></td>
+        <td class="num strong">1</td><td class="num dim">0.2%</td><td class="num dark">139</td><td class="num">0.72%</td><td class="num">4.19</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/trips/" target="_blank" rel="noopener">行程</a></td>
+        <td class="num strong">1</td><td class="num dim">0.2%</td><td class="num dark">87</td><td class="num">1.15%</td><td class="num">4.74</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/contact/" target="_blank" rel="noopener">聯絡我們</a></td>
+        <td class="num strong">1</td><td class="num dim">0.2%</td><td class="num dark">58</td><td class="num">1.72%</td><td class="num">2.40</td></tr>
+      <tr><td class="tl"><a href="https://roaming-taiwan.com/about/" target="_blank" rel="noopener">關於我們</a></td>
+        <td class="num strong">0</td><td class="num dim">0.0%</td><td class="num dark">155</td><td class="num warn">0%</td><td class="num">4.26</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin-top:14px">重點文章 14.8% ｜ 全站最大流量頁 33.5% ｜ 車型／服務頁 33.7% ｜ 品牌／官網頁 18.7%（含未列出的次要頁面）。</p>
+  </section>
+
+  <section>
+    <div class="section-num">07</div>
+    <div class="section-title">選題與需求探勘</div>
+    <div class="sub-title">曝光最高的非品牌字</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">搜尋字</th><th>點擊</th><th>曝光</th><th>平均排名</th><th class="tl">目前承接頁面</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">台灣環島旅遊</td><td class="num">3</td><td class="num dark strong">780</td><td class="num warn">18.27</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">汽車環島路線</td><td class="num">3</td><td class="num dark strong">356</td><td class="num">8.42</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">開車環島五天四夜</td><td class="num">7</td><td class="num dark strong">335</td><td class="num">7.94</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">漫遊台灣</td><td class="num">2</td><td class="num dark strong">296</td><td class="num">8.52</td>
+        <td class="tl dim">品牌字，多導向首頁</td></tr>
+      <tr><td class="tl">開車環島要幾天</td><td class="num">3</td><td class="num dark strong">232</td><td class="num">8.74</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">開車環島</td><td class="num">5</td><td class="num dark strong">217</td><td class="num">10.70</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">台灣環島</td><td class="num">2</td><td class="num dark strong">160</td><td class="num">11.24</td>
+        <td class="tl dim">環島攻略（既有內容）</td></tr>
+      <tr><td class="tl">中巴小可愛</td><td class="num">11</td><td class="num dark strong">148</td><td class="num gold">3.34</td>
+        <td class="tl dim">豪華中巴．小可愛（車型頁）</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin-top:14px">最大字族「環島」與「保母車／小可愛中巴」目前都已有內容承接，機會在於把排名卡在第 2 頁（8～18 名）的環島大字往前推，而非新增選題。</p>
+
+    <div class="sub-title">下一期選題候選（待丟關鍵字規劃工具查月搜尋量）</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">候選主題</th><th class="tl">核心關鍵字</th><th class="tl">判斷依據</th></tr></thead>
+      <tbody>
+      <tr><td class="tl strong">保母車收費／價格行情</td><td class="tl dim">保母車價格、保母車收費、保母車費用</td>
+        <td class="tl dim">全站有實際「保母 車 價格」查詢紀錄（排名 86，幾乎無承接頁面）；比較／決策詞是唯一驗證有效的模式</td></tr>
+      <tr><td class="tl strong">Lexus Alphard／阿爾法保母車型介紹</td><td class="tl dim">lexus alphard 保母車、阿爾法保母車</td>
+        <td class="tl gold">全站有 lexus 阿爾法、alphard lexus 等多筆車型字，但兩篇最接近的車型頁都沒點名廠牌車型——唯一有查詢紀錄佐證的真正選題空缺</td></tr>
+      <tr><td class="tl strong">豪華保母車推薦</td><td class="tl dim">豪華保母車推薦、豪華保母車</td>
+        <td class="tl dim">閨蜜文意外命中（50 曝光，排名 6.76）</td></tr>
+      <tr><td class="tl strong">保母車 vs 九人座怎麼選</td><td class="tl dim">保母車 九人座</td>
+        <td class="tl dim">站上已有同名文章（不在本次匯出範圍內，成效未知），需先確認是否整合而非重複產出</td></tr>
+      <tr><td class="tl strong">中巴／小可愛比較選擇</td><td class="tl dim">中巴小可愛、小可愛中巴</td>
+        <td class="tl dim">全站排名最好的字族（3.34、1.44），目前只有車型介紹頁承接，沒有「怎麼選」導向內容</td></tr>
+      </tbody>
+    </table></div>
+    <p class="meta" style="margin-top:14px">快贏（跟選題無關）：「中巴車」排名 1.1、「小可愛遊覽車」排名 1.44 都已排第一，但點擊 0——標題／meta 描述問題，不是缺內容。</p>
+  </section>
+
+  <section>
+    <div class="section-num">08</div>
+    <div class="section-title">裝置與地區</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">裝置</th><th>點擊</th><th>佔比</th><th>曝光</th><th>佔比</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">行動裝置</td><td class="num strong">278</td><td class="num dim">65.1%</td>
+        <td class="num dark">10,782</td><td class="num dim">60.8%</td>
+        <td class="num">2.58%</td><td class="num">7.76</td></tr>
+      <tr><td class="tl">桌面</td><td class="num strong">141</td><td class="num dim">33.0%</td>
+        <td class="num dark">6,733</td><td class="num dim">38.0%</td>
+        <td class="num">2.09%</td><td class="num">8.24</td></tr>
+      <tr><td class="tl">平板電腦</td><td class="num strong">8</td><td class="num dim">1.9%</td>
+        <td class="num dark">219</td><td class="num dim">1.2%</td>
+        <td class="num">3.65%</td><td class="num">7.68</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="sub-title">國家／地區 · 前 5</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th class="tl">國家／地區</th><th>點擊</th><th>佔比</th><th>曝光</th><th>佔比</th><th>點閱率</th><th>平均排名</th></tr></thead>
+      <tbody>
+      <tr><td class="tl">台灣</td><td class="num strong">376</td><td class="num dim">88.1%</td>
+        <td class="num dark">14,281</td><td class="num dim">80.5%</td>
+        <td class="num">2.63%</td><td class="num">8.10</td></tr>
+      <tr><td class="tl">美國</td><td class="num strong">23</td><td class="num dim">5.4%</td>
+        <td class="num dark">1,426</td><td class="num dim">8.0%</td>
+        <td class="num warn">1.61%</td><td class="num">6.95</td></tr>
+      <tr><td class="tl">香港</td><td class="num strong">4</td><td class="num dim">0.9%</td>
+        <td class="num dark">405</td><td class="num dim">2.3%</td>
+        <td class="num warn">0.99%</td><td class="num">9.11</td></tr>
+      <tr><td class="tl">加拿大</td><td class="num strong">4</td><td class="num dim">0.9%</td>
+        <td class="num dark">177</td><td class="num dim">1.0%</td>
+        <td class="num">2.26%</td><td class="num">8.16</td></tr>
+      <tr><td class="tl">中國</td><td class="num strong">4</td><td class="num dim">0.9%</td>
+        <td class="num dark">174</td><td class="num dim">1.0%</td>
+        <td class="num">2.30%</td><td class="num">6.80</td></tr>
+      <tr><td class="tl">其他</td><td class="num strong">16</td><td class="num dim">3.7%</td>
+        <td class="num dark">1,271</td><td class="num dim">7.2%</td>
+        <td class="num">1.26%</td><td class="num dim">—</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+</main>
+
+<footer>
+  <span><span class="brand">允諾行銷</span>　旅遊包租車 Roaming Taiwan</span>
+  <span>Google Search Console　2026/03/23 – 2026/08/04</span>
+</footer>
+
+<script>
+const weekly = [{"label": "03/23", "clicks": 10, "impressions": 235, "rank": 6.26}, {"label": "03/30", "clicks": 15, "impressions": 288, "rank": 5.98}, {"label": "04/06", "clicks": 12, "impressions": 291, "rank": 7.44}, {"label": "04/13", "clicks": 8, "impressions": 439, "rank": 6.79}, {"label": "04/20", "clicks": 5, "impressions": 317, "rank": 8.56}, {"label": "04/27", "clicks": 9, "impressions": 530, "rank": 8.25}, {"label": "05/04", "clicks": 19, "impressions": 1097, "rank": 8.49}, {"label": "05/11", "clicks": 43, "impressions": 1595, "rank": 7.88}, {"label": "05/18", "clicks": 23, "impressions": 1068, "rank": 8.17}, {"label": "05/25", "clicks": 27, "impressions": 888, "rank": 8.06}, {"label": "06/01", "clicks": 25, "impressions": 1082, "rank": 7.92}, {"label": "06/08", "clicks": 33, "impressions": 1138, "rank": 8.24}, {"label": "06/15", "clicks": 24, "impressions": 1165, "rank": 7.5}, {"label": "06/22", "clicks": 20, "impressions": 856, "rank": 8.65}, {"label": "06/29", "clicks": 40, "impressions": 1721, "rank": 7.41}, {"label": "07/06", "clicks": 24, "impressions": 1570, "rank": 8.18}, {"label": "07/13", "clicks": 32, "impressions": 1487, "rank": 8.85}, {"label": "07/20", "clicks": 29, "impressions": 881, "rank": 7.54}, {"label": "07/27", "clicks": 22, "impressions": 844, "rank": 7.65}];
+const daily = [{"date": "03/23", "pos": 5.6}, {"date": "03/24", "pos": 5.9}, {"date": "03/25", "pos": 6.1}, {"date": "03/26", "pos": 7.8}, {"date": "03/27", "pos": 6.1}, {"date": "03/28", "pos": 5.6}, {"date": "03/29", "pos": 6.5}, {"date": "03/30", "pos": 5.4}, {"date": "03/31", "pos": 6.7}, {"date": "04/01", "pos": 5.7}, {"date": "04/02", "pos": 6.7}, {"date": "04/03", "pos": 6.8}, {"date": "04/04", "pos": 4.5}, {"date": "04/05", "pos": 5.8}, {"date": "04/06", "pos": 6.8}, {"date": "04/07", "pos": 6.7}, {"date": "04/08", "pos": 7.8}, {"date": "04/09", "pos": 10.0}, {"date": "04/10", "pos": 7.9}, {"date": "04/11", "pos": 6.6}, {"date": "04/12", "pos": 6.3}, {"date": "04/13", "pos": 5.7}, {"date": "04/14", "pos": 6.0}, {"date": "04/15", "pos": 6.9}, {"date": "04/16", "pos": 7.5}, {"date": "04/17", "pos": 5.6}, {"date": "04/18", "pos": 7.5}, {"date": "04/19", "pos": 8.0}, {"date": "04/20", "pos": 8.1}, {"date": "04/21", "pos": 9.0}, {"date": "04/22", "pos": 10.4}, {"date": "04/23", "pos": 7.8}, {"date": "04/24", "pos": 8.3}, {"date": "04/25", "pos": 7.9}, {"date": "04/26", "pos": 8.4}, {"date": "04/27", "pos": 8.9}, {"date": "04/28", "pos": 8.5}, {"date": "04/29", "pos": 7.9}, {"date": "04/30", "pos": 8.3}, {"date": "05/01", "pos": 7.3}, {"date": "05/02", "pos": 7.9}, {"date": "05/03", "pos": 8.5}, {"date": "05/04", "pos": 8.1}, {"date": "05/05", "pos": 9.0}, {"date": "05/06", "pos": 9.1}, {"date": "05/07", "pos": 8.3}, {"date": "05/08", "pos": 8.3}, {"date": "05/09", "pos": 8.1}, {"date": "05/10", "pos": 8.6}, {"date": "05/11", "pos": 7.8}, {"date": "05/12", "pos": 8.5}, {"date": "05/13", "pos": 7.5}, {"date": "05/14", "pos": 8.2}, {"date": "05/15", "pos": 7.9}, {"date": "05/16", "pos": 7.7}, {"date": "05/17", "pos": 7.6}, {"date": "05/18", "pos": 7.8}, {"date": "05/19", "pos": 7.6}, {"date": "05/20", "pos": 8.3}, {"date": "05/21", "pos": 8.1}, {"date": "05/22", "pos": 8.3}, {"date": "05/23", "pos": 7.7}, {"date": "05/24", "pos": 9.6}, {"date": "05/25", "pos": 8.1}, {"date": "05/26", "pos": 8.1}, {"date": "05/27", "pos": 8.9}, {"date": "05/28", "pos": 8.2}, {"date": "05/29", "pos": 7.6}, {"date": "05/30", "pos": 7.6}, {"date": "05/31", "pos": 7.8}, {"date": "06/01", "pos": 7.9}, {"date": "06/02", "pos": 6.9}, {"date": "06/03", "pos": 7.7}, {"date": "06/04", "pos": 8.7}, {"date": "06/05", "pos": 8.1}, {"date": "06/06", "pos": 8.1}, {"date": "06/07", "pos": 8.2}, {"date": "06/08", "pos": 8.5}, {"date": "06/09", "pos": 8.2}, {"date": "06/10", "pos": 8.2}, {"date": "06/11", "pos": 7.4}, {"date": "06/12", "pos": 7.9}, {"date": "06/13", "pos": 8.3}, {"date": "06/14", "pos": 9.0}, {"date": "06/15", "pos": 7.0}, {"date": "06/16", "pos": 7.0}, {"date": "06/17", "pos": 7.7}, {"date": "06/18", "pos": 7.3}, {"date": "06/19", "pos": 7.5}, {"date": "06/20", "pos": 7.6}, {"date": "06/21", "pos": 8.4}, {"date": "06/22", "pos": 8.5}, {"date": "06/23", "pos": 8.4}, {"date": "06/24", "pos": 8.5}, {"date": "06/25", "pos": 8.9}, {"date": "06/26", "pos": 8.8}, {"date": "06/27", "pos": 8.7}, {"date": "06/28", "pos": 8.8}, {"date": "06/29", "pos": 8.4}, {"date": "06/30", "pos": 6.7}, {"date": "07/01", "pos": 7.6}, {"date": "07/02", "pos": 7.8}, {"date": "07/03", "pos": 7.4}, {"date": "07/04", "pos": 7.5}, {"date": "07/05", "pos": 7.0}, {"date": "07/06", "pos": 7.9}, {"date": "07/07", "pos": 8.3}, {"date": "07/08", "pos": 7.6}, {"date": "07/09", "pos": 8.4}, {"date": "07/10", "pos": 8.3}, {"date": "07/11", "pos": 8.0}, {"date": "07/12", "pos": 8.6}, {"date": "07/13", "pos": 8.3}, {"date": "07/14", "pos": 7.1}, {"date": "07/15", "pos": 10.1}, {"date": "07/16", "pos": 9.7}, {"date": "07/17", "pos": 9.0}, {"date": "07/18", "pos": 8.8}, {"date": "07/19", "pos": 9.0}, {"date": "07/20", "pos": 6.7}, {"date": "07/21", "pos": 8.1}, {"date": "07/22", "pos": 8.0}, {"date": "07/23", "pos": 7.5}, {"date": "07/24", "pos": 7.1}, {"date": "07/25", "pos": 7.6}, {"date": "07/26", "pos": 7.9}, {"date": "07/27", "pos": 7.5}, {"date": "07/28", "pos": 7.5}, {"date": "07/29", "pos": 7.4}, {"date": "07/30", "pos": 7.7}, {"date": "07/31", "pos": 6.7}, {"date": "08/01", "pos": 7.4}, {"date": "08/02", "pos": 8.8}];
+
+if (typeof Chart === 'undefined') {
+  document.querySelectorAll('canvas').forEach(c=>{
+    c.insertAdjacentHTML('afterend','<p style="color:#68604f;font-size:14px">圖表載入失敗（無法載入 Chart.js）。表格與數字不受影響。</p>');
+  });
+} else {
+  Chart.defaults.font.size = 13;
+  Chart.defaults.font.family = "'Noto Sans TC','PingFang TC',sans-serif";
+  Chart.defaults.color = '#68604f';
+
+  new Chart(document.getElementById('weekClicks'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.clicks),
+        backgroundColor: '#b3872e',
+        borderRadius:4, maxBarThickness:44 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y + ' 點擊' } } },
+      scales:{ y:{ beginAtZero:true, grid:{color:'#efe9d8'} }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('weekImpr'), {
+    type:'bar',
+    data:{ labels: weekly.map(w=>w.label),
+      datasets:[{ data: weekly.map(w=>w.impressions),
+        backgroundColor: '#181510',
+        borderRadius:4, maxBarThickness:44 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:(c)=> c.parsed.y.toLocaleString() + ' 曝光' } } },
+      scales:{ y:{ beginAtZero:true, grid:{color:'#efe9d8'}, ticks:{ callback:(v)=> v.toLocaleString() } }, x:{ grid:{display:false} } } }
+  });
+
+  new Chart(document.getElementById('rankLine'), {
+    type:'line',
+    data:{ labels: daily.map(d=>d.date),
+      datasets:[{ data: daily.map(d=>d.pos),
+        borderColor:'#a13f2b', backgroundColor:'rgba(161,63,43,0.10)', fill:true, tension:0.35, pointRadius:0, borderWidth:2 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} },
+      scales:{ y:{ reverse:true, grid:{color:'#efe9d8'} },
+        x:{ ticks:{maxTicksLimit:12}, grid:{display:false} } } }
+  });
+}
+</script>
+
+</body>
+</html>
